@@ -4,7 +4,8 @@ import { useAuth } from "./AuthContext";
 
 const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
 };
 
 export default PrivateRoute;

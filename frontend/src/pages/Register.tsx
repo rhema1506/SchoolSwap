@@ -1,61 +1,30 @@
-import React, { useState, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import AuthContext from "../auth/AuthContext";
+import React, { useState } from "react";
+import { useAuth } from "../auth/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-function Register() {
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
-  const { registerUser } = useContext(AuthContext);
+const Register: React.FC = () => {
+  const { register } = useAuth();
   const navigate = useNavigate();
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await registerUser(form.username, form.email, form.password);
-    if (success) navigate("/");
+    const ok = await register(form.username, form.email, form.password);
+    if (ok) navigate("/");
     else alert("Registration failed");
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <form onSubmit={handleSubmit} className="bg-white p-8 shadow-md rounded-lg w-96">
-        <h1 className="text-2xl font-semibold mb-6 text-center">Register</h1>
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          className="border rounded-md p-2 w-full mb-4"
-          value={form.username}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          className="border rounded-md p-2 w-full mb-4"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          className="border rounded-md p-2 w-full mb-4"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
-        <button className="bg-blue-600 text-white w-full py-2 rounded-md hover:bg-blue-700">
-          Register
-        </button>
-        <p className="text-sm text-center mt-4">
-          Already have an account? <Link to="/login" className="text-blue-600 hover:underline">Login</Link>
-        </p>
+    <div className="container">
+      <form onSubmit={submit} style={{ maxWidth: 420, margin: "20px auto", background: "#fff", padding: 20, borderRadius: 8 }}>
+        <h2>Register</h2>
+        <input name="username" value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} placeholder="Username" style={{ width: "100%", padding:8, marginBottom:12 }} />
+        <input name="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} placeholder="Email" style={{ width: "100%", padding:8, marginBottom:12 }} />
+        <input name="password" type="password" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} placeholder="Password" style={{ width: "100%", padding:8, marginBottom:12 }} />
+        <button className="btn" type="submit" style={{ background:"#0b5ed7", color:"white" }}>Register</button>
       </form>
     </div>
   );
-}
+};
 
 export default Register;

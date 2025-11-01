@@ -1,35 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api from "../api/axios";
+import API from "../utils/api";
 
-function ProductDetail() {
-  const { id } = useParams();
-  const [product, setProduct] = useState(null);
+const ProductDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [product, setProduct] = useState<any | null>(null);
 
   useEffect(() => {
-    api.get(`products/${id}/`)
-      .then((res) => setProduct(res.data))
-      .catch((err) => console.error("Error loading product:", err));
+    if (id) load();
   }, [id]);
 
-  if (!product) return <p className="text-center mt-10">Loading...</p>;
+  const load = async () => {
+    try {
+      const res = await API.get(`products/${id}/`);
+      setProduct(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (!product) return <div className="container">Loading...</div>;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      {product.image && (
-        <img
-          src={product.image}
-          alt={product.title}
-          className="w-full h-64 object-cover rounded-md mb-4"
-        />
-      )}
-      <h1 className="text-2xl font-semibold mb-2">{product.title}</h1>
-      <p className="text-gray-700 mb-2">{product.description}</p>
-      <p className="text-gray-500 mb-2">Condition: {product.condition}</p>
-      <p className="text-gray-500 mb-2">Category: {product.category}</p>
-      <p className="text-gray-500 mb-2">City: {product.city}</p>
+    <div className="container">
+      <div style={{ display: "flex", gap: 20 }}>
+        <div style={{ flex: 1 }}>
+          {product.image && <img src={product.image} alt={product.title} style={{ width: "100%", borderRadius: 8 }} />}
+        </div>
+        <div style={{ flex: 1 }}>
+          <h1>{product.title}</h1>
+          <p>{product.description}</p>
+          <p>Category: {product.category}</p>
+          <p>Condition: {product.condition}</p>
+          <p>City: {product.city}</p>
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default ProductDetail;

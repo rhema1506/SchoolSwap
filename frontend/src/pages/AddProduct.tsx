@@ -1,30 +1,32 @@
 import React, { useState } from "react";
-import api from "../api/axios";
+import API from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
-function AddProduct() {
+const AddProduct: React.FC = () => {
   const [form, setForm] = useState({
     title: "",
     description: "",
     category: "books",
     condition: "new",
-    city: "",
-    image: null,
+    city: ""
   });
+  const [image, setImage] = useState<File | null>(null);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setForm({ ...form, [name]: files ? files[0] : value });
-  };
-
-  const handleSubmit = async (e) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData();
-    for (let key in form) formData.append(key, form[key]);
     try {
-      await api.post("products/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      alert("Product added successfully");
+      const data = new FormData();
+      data.append("title", form.title);
+      data.append("description", form.description);
+      data.append("category", form.category);
+      data.append("condition", form.condition);
+      data.append("city", form.city);
+      if (image) data.append("image", image);
+
+      await API.post("products/", data, { headers: { "Content-Type": "multipart/form-data" } });
+      alert("Product added");
+      navigate("/");
     } catch (err) {
       console.error(err);
       alert("Error adding product");
@@ -32,33 +34,32 @@ function AddProduct() {
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-4">Add New Product</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input name="title" placeholder="Title" className="border w-full p-2 rounded-md"
-          onChange={handleChange} required />
-        <textarea name="description" placeholder="Description" className="border w-full p-2 rounded-md"
-          onChange={handleChange}></textarea>
-        <select name="category" className="border w-full p-2 rounded-md" onChange={handleChange}>
-          <option value="books">Books</option>
-          <option value="stationery">Stationery</option>
-          <option value="uniforms">Uniforms</option>
-          <option value="gadgets">Gadgets</option>
-          <option value="other">Other</option>
-        </select>
-        <select name="condition" className="border w-full p-2 rounded-md" onChange={handleChange}>
-          <option value="new">New</option>
-          <option value="used">Used</option>
-        </select>
-        <input name="city" placeholder="City" className="border w-full p-2 rounded-md"
-          onChange={handleChange} required />
-        <input type="file" name="image" onChange={handleChange} />
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-          Add Product
-        </button>
+    <div className="container">
+      <form onSubmit={submit} style={{ maxWidth: 700, margin: "20px auto", background:"#fff", padding:20, borderRadius:8 }}>
+        <h2>Add Product</h2>
+        <input placeholder="Title" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} style={{ width:"100%", padding:8, marginBottom:8 }} required/>
+        <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} style={{ width:"100%", padding:8, marginBottom:8 }} />
+        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+          <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
+            <option value="books">Books</option>
+            <option value="stationery">Stationery</option>
+            <option value="uniforms">Uniforms</option>
+            <option value="gadgets">Gadgets</option>
+            <option value="other">Other</option>
+          </select>
+          <select value={form.condition} onChange={(e) => setForm({...form, condition: e.target.value})}>
+            <option value="new">New</option>
+            <option value="used">Used</option>
+          </select>
+          <input placeholder="City" value={form.city} onChange={(e) => setForm({...form, city: e.target.value})} />
+        </div>
+        <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files ? e.target.files[0] : null)} />
+        <div style={{ marginTop: 12 }}>
+          <button className="btn" type="submit" style={{ background:"#0b5ed7", color:"white" }}>Add</button>
+        </div>
       </form>
     </div>
   );
-}
+};
 
 export default AddProduct;

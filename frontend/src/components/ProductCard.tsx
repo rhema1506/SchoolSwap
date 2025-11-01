@@ -1,20 +1,20 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
-function ProductCard({ product }) {
+type Props = {
+  product: any;
+};
+
+const ProductCard: React.FC<Props> = ({ product }) => {
   return (
-    <div className="border rounded-lg shadow-sm p-4 hover:shadow-md transition">
-      {product.image && (
-        <img
-          src={product.image}
-          alt={product.title}
-          className="w-full h-48 object-cover rounded-md mb-3"
-        />
-      )}
-      <h2 className="text-lg font-semibold mb-2">{product.title}</h2>
-      <p className="text-sm text-gray-600 mb-1">{product.category}</p>
-      <p className="text-sm text-gray-500">{product.city}</p>
-    </div>
+    <Link to={`/product/${product.id}`} className="card">
+      {product.image && <img src={product.image} alt={product.title} />}
+      <h3 style={{ margin: "8px 0 6px", fontSize: 16 }}>{product.title}</h3>
+      <div style={{ color: "#6b7280", fontSize: 13 }}>{product.category?.toUpperCase()}</div>
+      <div style={{ marginTop: "6px", fontSize: 13 }}>{product.city}</div>
+    </Link>
   );
-}
+};
 
 export default ProductCard;
+
