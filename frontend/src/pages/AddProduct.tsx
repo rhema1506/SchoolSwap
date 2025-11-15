@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import API from "../utils/api";
 import { useNavigate } from "react-router-dom";
+import API from "../api/axiosClient";
+import { PRODUCTS } from "../api/endpoints";
 
 const AddProduct: React.FC = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -11,51 +13,50 @@ const AddProduct: React.FC = () => {
     city: ""
   });
   const [image, setImage] = useState<File | null>(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      const data = new FormData();
-      data.append("title", form.title);
-      data.append("description", form.description);
-      data.append("category", form.category);
-      data.append("condition", form.condition);
-      data.append("city", form.city);
-      if (image) data.append("image", image);
-
-      await API.post("products/", data, { headers: { "Content-Type": "multipart/form-data" } });
-      alert("Product added");
-      navigate("/");
+      const fd = new FormData();
+      fd.append("title", form.title);
+      fd.append("description", form.description);
+      fd.append("category", form.category);
+      fd.append("condition", form.condition);
+      fd.append("city", form.city);
+      if (image) fd.append("image", image);
+      await API.post(PRODUCTS, fd, { headers: { "Content-Type": "multipart/form-data" }});
+      navigate("/products");
     } catch (err) {
       console.error(err);
       alert("Error adding product");
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="container">
-      <form onSubmit={submit} style={{ maxWidth: 700, margin: "20px auto", background:"#fff", padding:20, borderRadius:8 }}>
-        <h2>Add Product</h2>
-        <input placeholder="Title" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} style={{ width:"100%", padding:8, marginBottom:8 }} required/>
-        <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} style={{ width:"100%", padding:8, marginBottom:8 }} />
-        <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-          <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
+    <div className="container py-8">
+      <form onSubmit={submit} className="max-w-2xl mx-auto bg-white p-6 rounded shadow space-y-4">
+        <h2 className="text-xl font-semibold">Add Product</h2>
+        <input className="w-full border p-2 rounded" value={form.title} onChange={(e)=>setForm({...form, title:e.target.value})} placeholder="Title" required />
+        <textarea className="w-full border p-2 rounded" value={form.description} onChange={(e)=>setForm({...form, description:e.target.value})} placeholder="Description" />
+        <div className="flex gap-2">
+          <select className="border p-2 rounded" value={form.category} onChange={(e)=>setForm({...form, category:e.target.value})}>
             <option value="books">Books</option>
             <option value="stationery">Stationery</option>
             <option value="uniforms">Uniforms</option>
             <option value="gadgets">Gadgets</option>
             <option value="other">Other</option>
           </select>
-          <select value={form.condition} onChange={(e) => setForm({...form, condition: e.target.value})}>
+          <select className="border p-2 rounded" value={form.condition} onChange={(e)=>setForm({...form, condition:e.target.value})}>
             <option value="new">New</option>
             <option value="used">Used</option>
           </select>
-          <input placeholder="City" value={form.city} onChange={(e) => setForm({...form, city: e.target.value})} />
+          <input className="border p-2 rounded flex-1" value={form.city} onChange={(e)=>setForm({...form, city:e.target.value})} placeholder="City" />
         </div>
-        <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files ? e.target.files[0] : null)} />
-        <div style={{ marginTop: 12 }}>
-          <button className="btn" type="submit" style={{ background:"#0b5ed7", color:"white" }}>Add</button>
+        <input type="file" accept="image/*" onChange={(e)=>setImage(e.target.files?.[0] ?? null)} />
+        <div>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded">{loading ? "Uploading..." : "Add Product"}</button>
         </div>
       </form>
     </div>

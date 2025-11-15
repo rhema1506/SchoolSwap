@@ -1,37 +1,33 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-
-  const toggleLang = () => {
-    const newLang = i18n.language === "en" ? "ru" : "en";
-    i18n.changeLanguage(newLang);
-    localStorage.setItem("i18nextLng", newLang);
-  };
+  const { t } = useTranslation();
 
   return (
-    <header className="navbar">
-      <div className="container" style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
-        <div>
-          <Link to="/" style={{ color: "white", textDecoration: "none", fontWeight: 700 }}>{t("welcome")}</Link>
+    <header className="bg-blue-600 text-white">
+      <div className="container flex items-center justify-between h-14">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-lg font-bold">{t("welcome")}</Link>
+          <Link to="/products" className="hover:underline">{t("products")}</Link>
         </div>
-        <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
-          <button className="btn" onClick={toggleLang} style={{background:"#fff", color:"#0b5ed7"}}>{i18n.language === "en" ? "Русский" : "English"}</button>
-          <Link to="/" style={{color: "white", textDecoration: "none"}}>{t("products")}</Link>
+
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           {user ? (
             <>
-              <Link to="/add" style={{color: "white", textDecoration: "none"}}>{t("add_product")}</Link>
-              <button className="btn" onClick={() => { logout(); navigate("/"); }} style={{background:"transparent", color:"white"}}>{t("logout")}</button>
+              <Link to="/add" className="px-3 py-1 bg-white text-blue-600 rounded">{t("add_product")}</Link>
+              <button className="px-3 py-1 rounded hover:bg-white/10" onClick={() => { logout(); navigate("/"); }}>{t("logout")}</button>
             </>
           ) : (
             <>
-              <Link to="/login" style={{color: "white", textDecoration: "none"}}>{t("login")}</Link>
-              <Link to="/register" style={{color: "white", textDecoration: "none"}}>{t("register")}</Link>
+              <Link to="/login" className="px-3 py-1 rounded hover:bg-white/10">{t("login")}</Link>
+              <Link to="/register" className="px-3 py-1 rounded hover:bg-white/10">{t("register")}</Link>
             </>
           )}
         </div>

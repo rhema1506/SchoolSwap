@@ -1,27 +1,29 @@
 import React, { useState } from "react";
-import { useAuth } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 const Register: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const submit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await register(form.username, form.email, form.password);
-    if (ok) navigate("/");
+    const ok = await register(username, email, password);
+    if (ok) navigate("/products");
     else alert("Registration failed");
   };
 
   return (
-    <div className="container">
-      <form onSubmit={submit} style={{ maxWidth: 420, margin: "20px auto", background: "#fff", padding: 20, borderRadius: 8 }}>
-        <h2>Register</h2>
-        <input name="username" value={form.username} onChange={(e) => setForm({...form, username: e.target.value})} placeholder="Username" style={{ width: "100%", padding:8, marginBottom:12 }} />
-        <input name="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} placeholder="Email" style={{ width: "100%", padding:8, marginBottom:12 }} />
-        <input name="password" type="password" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} placeholder="Password" style={{ width: "100%", padding:8, marginBottom:12 }} />
-        <button className="btn" type="submit" style={{ background:"#0b5ed7", color:"white" }}>Register</button>
+    <div className="container py-8">
+      <form onSubmit={onSubmit} className="max-w-md mx-auto bg-white p-6 rounded shadow space-y-4">
+        <h2 className="text-xl font-semibold">Register</h2>
+        <input className="w-full border p-2 rounded" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
+        <input className="w-full border p-2 rounded" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+        <input className="w-full border p-2 rounded" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
+        <button className="w-full bg-green-600 text-white py-2 rounded">Create account</button>
       </form>
     </div>
   );
