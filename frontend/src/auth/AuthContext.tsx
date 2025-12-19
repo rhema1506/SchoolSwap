@@ -1,67 +1,64 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import jwtDecode from "jwt-decode";
-import API from "../api/axiosClient";
-import { AUTH_TOKEN, AUTH_REGISTER } from "../api/endpoints";
-import type { User } from "../types/user";
+import api from "../api/axios";
 
-type AuthContextType = {
+interface User { id: number; username: string; email: string; }
+interface AuthContextType {
   user: User | null;
-  login: (usernameOrEmail: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  loading: boolean;
+  login: (usernameOrEmail: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("access");
-    if (token) {
-      try {
-        const decoded: any = jwtDecode(token);
-        setUser({ id: decoded.user_id ?? decoded.sub ?? decoded.id, username: decoded.username ?? decoded.user });
-      } catch {
-        setUser(null);
-      }
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      setLoading(false);
+      return;
     }
+    api.get("auth/me/")
+      .then((res) => setUser(res.data))
+      .catch(() => localStorage.removeItem("accessToken"))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (usernameOrEmail: string, password: string) => {
-    try {
-      // backend may accept username or email; adjust payload if necessary
-      const res = await API.post(AUTH_TOKEN, { username: usernameOrEmail, password });
-      const data = res.data;
-      localStorage.setItem("access", data.access);
-      if (data.refresh) localStorage.setItem("refresh", data.refresh);
-      const decoded: any = jwtDecode(data.access);
-      setUser({ id: decoded.user_id ?? decoded.sub ?? decoded.id, username: decoded.username ?? usernameOrEmail });
-      return true;
-    } catch (err) {
-      console.error("Login error", err);
-      return false;
-    }
+    const res = await api.post("auth/login/", { username: usernameOrEmail, password });
+    // SimpleJWT returns access and refresh
+    const { access, refresh } = res.data;
+    localStorage.setItem("accessToken", access);
+    localStorage.setItem("refreshToken", refresh);
+    // fetch user
+    const me = await api.get("auth/me/");
+    setUser(me.data);
   };
 
   const register = async (username: string, email: string, password: string) => {
-    try {
-      await API.post(AUTH_REGISTER, { username, email, password });
-      // auto-login
-      return await login(username, password);
-    } catch (err) {
-      console.error("Register error", err);
-      return false;
-    }
+    const res = await api.post("auth/register/", { username, email, password });
+    const { access, refresh } = res.data;
+    localStorage.setItem("accessToken", access);
+    localStorage.setItem("refreshToken", refresh);
+    const me = await api.get("auth/me/");
+    setUser(me.data);
   };
 
   const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, login, register, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

@@ -1,66 +1,111 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axiosClient";
-import { PRODUCTS } from "../api/endpoints";
 
-const AddProduct: React.FC = () => {
+export default function AddProduct() {
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [category, setCategory] = useState("books");
+  const [condition, setCondition] = useState("used");
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    category: "books",
-    condition: "new",
-    city: ""
-  });
-  const [image, setImage] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files;
+    if (!selected) return;
+    const arr = Array.from(selected);
+    setFiles(arr);
+    setPreviews(arr.map(f => URL.createObjectURL(f)));
+  };
+
+  useEffect(() => {
+    return () => {
+      previews.forEach(p => URL.revokeObjectURL(p));
+    };
+  }, [previews]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     try {
-      const fd = new FormData();
-      fd.append("title", form.title);
-      fd.append("description", form.description);
-      fd.append("category", form.category);
-      fd.append("condition", form.condition);
-      fd.append("city", form.city);
-      if (image) fd.append("image", image);
-      await API.post(PRODUCTS, fd, { headers: { "Content-Type": "multipart/form-data" }});
-      navigate("/products");
-    } catch (err) {
-      console.error(err);
-      alert("Error adding product");
-    } finally { setLoading(false); }
+      const res = await api.post("products/", {
+        title,
+        description: desc,
+        category,
+        condition,
+      });
+
+      const product = res.data;
+
+      if (files.length > 0) {
+        const form = new FormData();
+        form.append("product", String(product.id));
+        files.forEach(f => form.append("images", f));
+        await api.post("products/upload/", form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      navigate(`/products/${product.id}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Failed to create product");
+    }
   };
 
   return (
-    <div className="container py-8">
-      <form onSubmit={submit} className="max-w-2xl mx-auto bg-white p-6 rounded shadow space-y-4">
-        <h2 className="text-xl font-semibold">Add Product</h2>
-        <input className="w-full border p-2 rounded" value={form.title} onChange={(e)=>setForm({...form, title:e.target.value})} placeholder="Title" required />
-        <textarea className="w-full border p-2 rounded" value={form.description} onChange={(e)=>setForm({...form, description:e.target.value})} placeholder="Description" />
-        <div className="flex gap-2">
-          <select className="border p-2 rounded" value={form.category} onChange={(e)=>setForm({...form, category:e.target.value})}>
-            <option value="books">Books</option>
-            <option value="stationery">Stationery</option>
-            <option value="uniforms">Uniforms</option>
-            <option value="gadgets">Gadgets</option>
-            <option value="other">Other</option>
-          </select>
-          <select className="border p-2 rounded" value={form.condition} onChange={(e)=>setForm({...form, condition:e.target.value})}>
-            <option value="new">New</option>
-            <option value="used">Used</option>
-          </select>
-          <input className="border p-2 rounded flex-1" value={form.city} onChange={(e)=>setForm({...form, city:e.target.value})} placeholder="City" />
-        </div>
-        <input type="file" accept="image/*" onChange={(e)=>setImage(e.target.files?.[0] ?? null)} />
-        <div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded">{loading ? "Uploading..." : "Add Product"}</button>
-        </div>
-      </form>
-    </div>
-  );
-};
+    <form onSubmit={submit} style={{ maxWidth: 700 }}>
+      <h3>Add Product</h3>
 
-export default AddProduct;
+      <input
+        placeholder="Title"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        required
+      />
+
+      <textarea
+        placeholder="Description"
+        value={desc}
+        onChange={e => setDesc(e.target.value)}
+      />
+
+      <div>
+        <label>Category</label>
+        <select value={category} onChange={e => setCategory(e.target.value)}>
+          <option value="books">Books</option>
+          <option value="stationery">Stationery</option>
+          <option value="uniforms">Uniforms</option>
+          <option value="gadgets">Gadgets</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Condition</label>
+        <select value={condition} onChange={e => setCondition(e.target.value)}>
+          <option value="new">New</option>
+          <option value="used">Used</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Images (multiple)</label>
+        <input type="file" multiple accept="image/*" onChange={handleFiles} />
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          {previews.map((p, i) => (
+            <img
+              key={i}
+              src={p}
+              alt="preview"
+              style={{ width: 120, height: 80, objectFit: "cover" }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <button type="submit">Create Product</button>
+      {error && <div style={{ color: "red" }}>{error}</div>}
+    </form>
+  );
+}

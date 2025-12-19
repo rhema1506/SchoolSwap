@@ -2,31 +2,33 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-const Register: React.FC = () => {
-  const { register } = useAuth();
-  const navigate = useNavigate();
+export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { register } = useAuth();
+  const nav = useNavigate();
+  const [error, setError] = useState("");
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await register(username, email, password);
-    if (ok) navigate("/products");
-    else alert("Registration failed");
+    try {
+      await register(username, email, password);
+      nav("/");
+    } catch (err) {
+      console.error(err);
+      setError("Registration failed");
+    }
   };
 
   return (
-    <div className="container py-8">
-      <form onSubmit={onSubmit} className="max-w-md mx-auto bg-white p-6 rounded shadow space-y-4">
-        <h2 className="text-xl font-semibold">Register</h2>
-        <input className="w-full border p-2 rounded" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
-        <input className="w-full border p-2 rounded" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-        <input className="w-full border p-2 rounded" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
-        <button className="w-full bg-green-600 text-white py-2 rounded">Create account</button>
-      </form>
-    </div>
+    <form onSubmit={submit} style={{ maxWidth: 400, margin: "20px auto" }}>
+      <h3>Register</h3>
+      <input placeholder="username" value={username} onChange={e => setUsername(e.target.value)} style={{ width: "100%", padding: 8, marginBottom: 8 }} />
+      <input placeholder="email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: "100%", padding: 8, marginBottom: 8 }} />
+      <input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} style={{ width: "100%", padding: 8, marginBottom: 8 }} />
+      <button type="submit">Register</button>
+      <div style={{ color: "red" }}>{error}</div>
+    </form>
   );
-};
-
-export default Register;
+}

@@ -1,49 +1,113 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import API from "../api/axiosClient";
-import { PRODUCTS } from "../api/endpoints";
-import type { Product } from "../types/product";
-import Loader from "../components/Loader";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../api/axios";
+import { useAuth } from "../auth/AuthContext";
 
-const ProductDetail: React.FC = () => {
-  const { id } = useParams();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await API.get(`${PRODUCTS}${id}/`);
-        setProduct(res.data);
-      } catch (err) { console.error(err); }
-      setLoading(false);
-    };
-    if (id) load();
-  }, [id]);
-
-  if (loading) return <Loader />;
-  if (!product) return <div className="container py-6">Product not found</div>;
-
-  const img = product.image ? (product.image.startsWith("http") ? product.image : `http://127.0.0.1:8000${product.image}`) : undefined;
-
-  return (
-    <div className="container py-6">
-      <div className="bg-white p-6 rounded shadow">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>{img ? <img src={img} alt={product.title} className="w-full rounded" /> : <div className="w-full h-64 bg-gray-100 flex items-center justify-center">No image</div>}</div>
-          <div>
-            <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
-            <p className="text-gray-700 mb-3">{product.description}</p>
-            <p><strong>Category:</strong> {product.category}</p>
-            <p><strong>Condition:</strong> {product.condition}</p>
-            <p><strong>City:</strong> {product.city}</p>
-            <p className="mt-4"><strong>Ratings:</strong> {product.ratings?.length ?? 0}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+type Product = {
+  id: number;
+  title: string;
+  description: string;
+  seller: number;
+  category: string;
+  condition: string;
 };
 
-export default ProductDetail;
+export default function ProductDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [offeredProductId, setOfferedProductId] = useState<number | null>(null);
+  const [myProducts, setMyProducts] = useState<Product[]>([]);
+  const [message, setMessage] = useState("");
+  const { user } = useAuth();
+  const nav = useNavigate();
+
+  // Load product details
+  useEffect(() => {
+    if (!id) return;
+    api.get(`products/${id}/`)
+      .then(res => setProduct(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // Load user's own products
+  useEffect(() => {
+    if (!user) return;
+    api.get("products/?owner=true")
+      .then(res => setMyProducts(res.data.filter((p: Product) => p.seller === (user as any).id)))
+      .catch(() => {
+        // fallback: load all and filter
+        api.get("products/")
+          .then(res => setMyProducts(res.data.filter((p: Product) => p.seller === (user as any).id)));
+      });
+  }, [user]);
+
+  const createTrade = async () => {
+    if (!user) {
+      nav("/login");
+      return;
+    }
+    if (!product) return;
+
+    try {
+      const payload: any = {
+        requested_product: product.id,
+        message,
+      };
+      if (offeredProductId) payload.offered_product_id = offeredProductId;
+
+      await api.post("trades/", payload);
+      nav("/trades");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.detail || "Failed to create trade");
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!product) return <div>Not found</div>;
+
+  return (
+    <div>
+      <h2>{product.title}</h2>
+      <p>{product.description}</p>
+      <div>Category: {product.category}</div>
+      <div>Condition: {product.condition}</div>
+
+      <hr />
+
+      <h3>Request Trade or Claim</h3>
+      <div>
+        <label>
+          Offer one of your products (optional)
+          <select
+            value={offeredProductId ?? ""}
+            onChange={(e) =>
+              setOfferedProductId(e.target.value ? Number(e.target.value) : null)
+            }
+          >
+            <option value="">(No offer — request for free)</option>
+            {myProducts.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div>
+        <label>
+          Message to owner:
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </label>
+      </div>
+
+      <button onClick={createTrade}>Send Trade Request</button>
+    </div>
+  );
+}
